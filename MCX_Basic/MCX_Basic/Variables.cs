@@ -1,19 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MCX_Basic
 {
-    class Variables
+    public class Variables
     {
-        private static int NSNotFound = -1;
-        private static bool NO = false;
-        private static bool YES = true;
-        private static String TAG;// = MainActivity.class.getSimpleName();
+        private readonly int NSNotFound = -1;
+        private readonly bool NO = false;
+        private readonly bool YES = true;
+        private readonly String TAG = MethodBase.GetCurrentMethod().DeclaringType.Name + ": ";
 
         DigitalFunc digitalFunc;
         NormalizeString normaStr = new NormalizeString();
@@ -22,12 +24,12 @@ namespace MCX_Basic
 
         public int makeVariableIndex(String name)
         {
-            int result = GlobalVars.getInstance().variables.Count;
+            int result = GlobalVars.getInstance().Variables.Count;
             if (result > 0)
             {
-                for (int i = 0; i < GlobalVars.getInstance().variables.Count; i++)
+                for (int i = 0; i < GlobalVars.getInstance().Variables.Count; i++)
                 {
-                    VariableSet varSet = GlobalVars.getInstance().variables[i];
+                    VariableSet varSet = GlobalVars.getInstance().Variables[i];
                     if (varSet.name.Equals(name))
                     {
                         result = i;
@@ -40,11 +42,11 @@ namespace MCX_Basic
         public bool variableIsDigit(String name)
         {
             bool result = NO;
-            if (GlobalVars.getInstance().variables.Count > 0 || variableIsPresent(name))
+            if (GlobalVars.getInstance().Variables.Count > 0 || variableIsPresent(name))
             {
-                for (int i = 0; i < GlobalVars.getInstance().variables.Count; i++)
+                for (int i = 0; i < GlobalVars.getInstance().Variables.Count; i++)
                 {
-                    VariableSet varSet = GlobalVars.getInstance().variables[i];
+                    VariableSet varSet = GlobalVars.getInstance().Variables[i];
                     if (varSet.name.Equals(name))
                     {
                         if (!varSet.stringType) result = YES;
@@ -57,11 +59,11 @@ namespace MCX_Basic
         public bool variableIsPresent(String name)
         {
             bool result = NO;
-            if (GlobalVars.getInstance().variables.Count > 0)
+            if (GlobalVars.getInstance().Variables.Count > 0)
             {
-                for (int i = 0; i < GlobalVars.getInstance().variables.Count; i++)
+                for (int i = 0; i < GlobalVars.getInstance().Variables.Count; i++)
                 {
-                    VariableSet varSet = GlobalVars.getInstance().variables[i];
+                    VariableSet varSet = GlobalVars.getInstance().Variables[i];
                     if (varSet.name.Equals(name))
                     {
                         result = YES;
@@ -74,11 +76,11 @@ namespace MCX_Basic
         public String returnContainOfVariable(String name)
         {
             String result = "";
-            if (GlobalVars.getInstance().variables.Count > 0 || variableIsPresent(name))
+            if (GlobalVars.getInstance().Variables.Count > 0 || variableIsPresent(name))
             {
-                for (int i = 0; i < GlobalVars.getInstance().variables.Count; i++)
+                for (int i = 0; i < GlobalVars.getInstance().Variables.Count; i++)
                 {
-                    VariableSet varSet = GlobalVars.getInstance().variables[i];
+                    VariableSet varSet = GlobalVars.getInstance().Variables[i];
                     if (varSet.name.Equals(name))
                     {
                         result = varSet.var;
@@ -91,13 +93,13 @@ namespace MCX_Basic
         public void initArrayNameWithSize(String name, int size)
         {
             ArraySet array = new ArraySet();
-            for (int i = 0; i < GlobalVars.getInstance().array.Count; i++)
+            for (int i = 0; i < GlobalVars.getInstance().Array.Count; i++)
             {
-                array = (ArraySet)GlobalVars.getInstance().array[i];
+                array = (ArraySet)GlobalVars.getInstance().Array[i];
                 String str = array.name;
                 if (str.Equals(name))
                 {
-                    GlobalVars.getInstance().array.RemoveAt(i);
+                    GlobalVars.getInstance().Array.RemoveAt(i);
                 }
             }
             array = new ArraySet();
@@ -107,7 +109,7 @@ namespace MCX_Basic
             }
             array.name = name;
             array.size = size;
-            GlobalVars.getInstance().array.Add(array);
+            GlobalVars.getInstance().Array.Add(array);
         }
 
         public bool isArrayPresent(String name)
@@ -117,7 +119,7 @@ namespace MCX_Basic
             NSRange rangeSecond = new NSRange(name.IndexOf(")"), 1);
             ArraySet array = new ArraySet();
             String string_var = name;
-            ////Log.d(TAG, "± ========resultFromString NAME - "+ name);
+            Debug.WriteLine(TAG + "± ========resultFromString NAME - "+ name);
 
             if (!normaStr.insideText(name, rangeFirst.location) && !normaStr.insideText(name, rangeSecond.location))
                 while (rangeFirst.location != NSNotFound)
@@ -125,9 +127,9 @@ namespace MCX_Basic
                     if (rangeFirst.location != NSNotFound)
                     {
                         name = name.Substring(0, rangeFirst.location);
-                        for (int i = 0; i < GlobalVars.getInstance().array.Count; i++)
+                        for (int i = 0; i < GlobalVars.getInstance().Array.Count; i++)
                         {
-                            array = (ArraySet)GlobalVars.getInstance().array[i];
+                            array = (ArraySet)GlobalVars.getInstance().Array[i];
                             String str = array.name;
                             if (str.Equals(name))
                             {
@@ -135,23 +137,23 @@ namespace MCX_Basic
                             }
                         }
                     }
-                    string_var = string_var.Substring(rangeSecond.location + 1, string_var.Length);
+                    string_var = string_var.Substring(rangeSecond.location + 1);
                     name = string_var;
                     rangeFirst = new NSRange(name.IndexOf("("), 1);
                     rangeSecond = new NSRange(name.IndexOf(")"), 1);
                 }
-            ////Log.d(TAG, "± ========resultFromString result - "+ result);
+            Debug.WriteLine(TAG + "± ========resultFromString result - "+ result);
             return result;
         }
 
         public bool variableIsString(String name)
         {
             bool result = NO;
-            if (GlobalVars.getInstance().variables.Count > 0 || variableIsPresent(name))
+            if (GlobalVars.getInstance().Variables.Count > 0 || variableIsPresent(name))
             {
-                for (int i = 0; i < GlobalVars.getInstance().variables.Count; i++)
+                for (int i = 0; i < GlobalVars.getInstance().Variables.Count; i++)
                 {
-                    VariableSet varSet = (VariableSet)GlobalVars.getInstance().variables[i];
+                    VariableSet varSet = (VariableSet)GlobalVars.getInstance().Variables[i];
                     if (varSet.name.Equals(name))
                     {
                         result = varSet.stringType;
@@ -172,58 +174,57 @@ namespace MCX_Basic
         public bool forbiddenVariable(String string_var)
         {
             bool result = NO;
-            for (int i = 0; i < GlobalVars.getInstance().listOfAll.Count; i++)
+            for (int i = 0; i < GlobalVars.getInstance().ListOfAll.Count; i++)
             {
-                int index = string_var.ToLower().IndexOf(GlobalVars.getInstance().listOfAll[i].ToString());
+                int index = string_var.ToLower().IndexOf(GlobalVars.getInstance().ListOfAll[i].ToString());
                 if (index != NSNotFound && index == 0)
                 {
                     result = YES;
-                    //Log.d(TAG, "± forbidden var found!! " + string_var);
+                    Debug.WriteLine(TAG + "± forbidden var found!! " + string_var);
                 }
             }
             if (result)
             {
-                GlobalVars.getInstance().error = "Vrong variable name\n";
+                GlobalVars.getInstance().Error = "Vrong variable name" + Environment.NewLine;
             }
             return result;
         }
 
         public VariableSet addDateToVariable(String variable)
         {
-            Calendar c;// = Calendar.GlobalVars.getInstance();
-            String format = "yyyy-MM-dd";
-            /*
-            // US culture
+            VariableSet result = new VariableSet();
+
+            // culture
             var usCulture = new CultureInfo("en-US");
             // Get current UTC time.   
-            var utcDate = DateTime.UtcNow;
-            // Change time to match GMT + 1.
-            var gmt1Date = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(utcDate, "W. Europe Standard Time");
-            // Output the GMT+1 time in our specified format using the US-culture. 
-            var str = gmt1Date.ToString("ddd, dd MMM yyyy HH:mm:ss z", usCulture);
-            */
-            //SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.US);
-            var sdf = new DateTime();
+            var curDate = DateTime.Now;
+            // Output the date in our specified format using the US-culture. 
+            var str = curDate.ToString("dd.MM.yyyy", usCulture);
 
-            VariableSet result = new VariableSet();
-            //result.var = sdf.format(c.getTime());
+            result.var = str.ToString();
+
             result.name = variable;
             result.stringType = YES;
-            //Log.d(TAG, "± addDateToVariable " + result);
+            Debug.WriteLine(TAG + "± addDateToVariable " + result);
             return result;
         }
 
         public VariableSet addTimeToVariable(String variable)
         {
             VariableSet result = new VariableSet();
-            /*Calendar c = Calendar.GlobalVars.getInstance();
             String format = "HH:mm:ss";
-            SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.US);
-            
-            result.var = sdf.format(c.getTime());
+
+            // culture
+            var usCulture = new CultureInfo("en-US");
+            // Get current UTC time.   
+            var curDate = DateTime.Now;
+            // Output the date in our specified format using the US-culture. 
+            var str = curDate.ToString(format, usCulture);
+
+            result.var = str.ToString();
             result.name = variable;
             result.stringType = YES;
-            //Log.d(TAG, "± addTimeToVariable " + result);*/
+            Debug.WriteLine(TAG + "± addTimeToVariable " + result);
             return result;
         }
 
@@ -238,8 +239,8 @@ namespace MCX_Basic
             {
                 if (!normaStr.isPairedQuotes(afterEqual))
                 {
-                    //Log.d(TAG, "± Miss \" in string_var variable " + result + afterEqual);
-                    GlobalVars.getInstance().error = "Miss \" in string_var variable\n";
+                    Debug.WriteLine(TAG + "± Miss \" in string_var variable " + result + afterEqual);
+                    GlobalVars.getInstance().Error = "Miss \" in string_var variable" + Environment.NewLine;
                 }
             }
             int l = 0;
@@ -247,13 +248,13 @@ namespace MCX_Basic
             if (!result.Contains("$") && afterEqual.Contains("\"") && !afterEqual.Substring(0, l).Equals("=asc")
                     && !afterEqual.Substring(0, l).Equals("=ins") && !afterEqual.Substring(0, l).Equals("=val"))
             {
-                GlobalVars.getInstance().error = "Type mismatch\n";
+                GlobalVars.getInstance().Error = "Type mismatch" + Environment.NewLine;
             }
-            String set = "(?:[^a-zA-Z]+$)";
+            String set = "(?:[^a-zA-Z]+^$)";
             if (Regex.IsMatch(result, set))
             {
                 result = "";
-                GlobalVars.getInstance().error = "Variable contains illegal characters\n";
+                GlobalVars.getInstance().Error = "Variable contains illegal characters" + Environment.NewLine;
             }
             return result;
         }
@@ -263,22 +264,22 @@ namespace MCX_Basic
             bool result = NO;
             String varName = returnVarName(string_var);
             int index = makeVariableIndex(varName);
-            if (!forbiddenVariable(varName) && varName.Length > 0 && String.IsNullOrEmpty(GlobalVars.getInstance().error) && varName.Contains("$"))
+            if (!forbiddenVariable(varName) && varName.Length > 0 && String.IsNullOrEmpty(GlobalVars.getInstance().Error) && varName.Contains("$"))
             {
-                if (index == GlobalVars.getInstance().variables.Count)
+                if (index == GlobalVars.getInstance().Variables.Count)
                 {
-                    GlobalVars.getInstance().variables.Add(addDateToVariable(varName));
+                    GlobalVars.getInstance().Variables.Add(addDateToVariable(varName));
                 }
                 else {
-                    GlobalVars.getInstance().variables[index] = addDateToVariable(varName);
+                    GlobalVars.getInstance().Variables[index] = addDateToVariable(varName);
                 }
                 result = YES;
             }
             else {
-                GlobalVars.getInstance().command = "";
-                GlobalVars.getInstance().error = "Syntax error\n";
-                //Log.d(TAG, "± date let empty, error-" + GlobalVars.getInstance().error);
-                GlobalVars.getInstance().isOkSet = NO;
+                GlobalVars.getInstance().Command = "";
+                GlobalVars.getInstance().Error = "Syntax error" + Environment.NewLine;
+                Debug.WriteLine(TAG + "± date let empty, error-" + GlobalVars.getInstance().Error);
+                GlobalVars.getInstance().IsOkSet = NO;
             }
             return result;
         }
@@ -288,22 +289,22 @@ namespace MCX_Basic
             bool result = NO;
             String varName = returnVarName(string_var);
             int index = makeVariableIndex(varName);
-            if (!forbiddenVariable(varName) && varName.Length > 0 && String.IsNullOrEmpty(GlobalVars.getInstance().error) && varName.Contains("$"))
+            if (!forbiddenVariable(varName) && varName.Length > 0 && String.IsNullOrEmpty(GlobalVars.getInstance().Error) && varName.Contains("$"))
             {
-                if (index == GlobalVars.getInstance().variables.Count)
+                if (index == GlobalVars.getInstance().Variables.Count)
                 {
-                    GlobalVars.getInstance().variables.Add(addTimeToVariable(varName));
+                    GlobalVars.getInstance().Variables.Add(addTimeToVariable(varName));
                 }
                 else {
-                    GlobalVars.getInstance().variables[index] = addTimeToVariable(varName);
+                    GlobalVars.getInstance().Variables[index] = addTimeToVariable(varName);
                 }
                 result = YES;
             }
             else {
-                GlobalVars.getInstance().command = "";
-                GlobalVars.getInstance().error = "Syntax error\n";
-                //Log.d(TAG, "± time let empty, error-" + GlobalVars.getInstance().error);
-                GlobalVars.getInstance().isOkSet = NO;
+                GlobalVars.getInstance().Command = "";
+                GlobalVars.getInstance().Error = "Syntax error" + Environment.NewLine;
+                Debug.WriteLine(TAG + "± time let empty, error-" + GlobalVars.getInstance().Error);
+                GlobalVars.getInstance().IsOkSet = NO;
             }
             return result;
         }
@@ -326,7 +327,7 @@ namespace MCX_Basic
                         NSRange rangeFirst = new NSRange(string_var.IndexOf("("), 1);
                         NSRange rangeSecond = new NSRange(string_var.IndexOf(")"), 1);
                         String name = string_var.Substring(0, rangeFirst.location);
-                        String indexS = string_var.Substring(rangeFirst.location + 1, rangeSecond.location);
+                        String indexS = string_var.Substring(rangeFirst.location + 1, rangeSecond.length);
                         int index = 0;
                         try
                         {
@@ -335,16 +336,16 @@ namespace MCX_Basic
                         }
                         catch //(NumberFormatException e)
                         {
-                            //Log.d(TAG, "± indexS=" + indexS + "Wrong number format in returnContainOfArray!");
+                            Debug.WriteLine(TAG + "± indexS=" + indexS + "Wrong number format in returnContainOfArray!");
                         }
                         String result = "";
                         while (rangeFirst.location != NSNotFound)
                         {
                             if (isArrayPresent(string_var))
                             {
-                                for (int ii = 0; ii < GlobalVars.getInstance().array.Count; ii++)
+                                for (int ii = 0; ii < GlobalVars.getInstance().Array.Count; ii++)
                                 {
-                                    arrayDim = (ArraySet)GlobalVars.getInstance().array[ii];
+                                    arrayDim = (ArraySet)GlobalVars.getInstance().Array[ii];
                                     String str = arrayDim.name;
                                     if (str.Equals(name))
                                     {
@@ -355,7 +356,7 @@ namespace MCX_Basic
                                             if (name.Contains("$") && String.IsNullOrEmpty(result)) result = " ";
                                         }
                                         else {
-                                            GlobalVars.getInstance().error = "Subscript out of range\n";
+                                            GlobalVars.getInstance().Error = "Subscript out of range" + Environment.NewLine;
                                             result = "error";
                                         }
                                     }
@@ -373,7 +374,7 @@ namespace MCX_Basic
                                 }
                                 catch //(NumberFormatException e)
                                 {
-                                    //Log.d(TAG, "± indexS=" + indexS + "Wrong number format in returnContainOfArray!");
+                                    Debug.WriteLine(TAG + "± indexS=" + indexS + "Wrong number format in returnContainOfArray!");
                                 }
                             }
                         }

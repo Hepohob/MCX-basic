@@ -6,16 +6,18 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Reflection;
+//using org.mariuszgromada.math.mxparser;
+using System.Diagnostics;
 using org.mariuszgromada.math.mxparser;
 
 namespace MCX_Basic
 {
-    class DigitalFunc
+    public class DigitalFunc
     {
-        private static int NSNotFound = -1;
-        private static bool NO = false;
-        private static bool YES = true;
-        private static String TAG;// = MainActivity.class.getSimpleName();
+        private readonly int NSNotFound = -1;
+        private readonly bool NO = false;
+        private readonly bool YES = true;
+        private readonly String TAG = MethodBase.GetCurrentMethod().DeclaringType.Name + ": ";
         NormalizeString normaStr = new NormalizeString();
         Variables variables = new Variables();
 
@@ -26,10 +28,13 @@ namespace MCX_Basic
         String numberMathSet = "^[^0-9./^+*-]+$";
         //    NSCharacterSet * numberSet = NSCharacterSet characterSetWithCharactersInString:".0123456789+-/*^" invertedSet;
 
+        public void DiDigitalFunc() { }
+
         public bool isOnlyDigits(String var)
         {
             bool result = YES;
             //if (!var.matches(numberSet)) result = NO;
+            var = var.Replace(',', '.');
             if (Regex.IsMatch(var, numberSet, RegexOptions.IgnoreCase) == false)
                 result = NO;
 
@@ -72,9 +77,9 @@ namespace MCX_Basic
         public bool mathFunction(String string_var)
         {
             bool result = NO;
-            for (int i = 0; i < GlobalVars.getInstance().listMathFunc.Count; i++)
+            for (int i = 0; i < GlobalVars.getInstance().ListMathFunc.Count; i++)
             {
-                NSRange range = new NSRange(string_var.ToLower().IndexOf(GlobalVars.getInstance().listMathFunc[i].ToString()), GlobalVars.getInstance().listMathFunc[i].ToString().Length);
+                NSRange range = new NSRange(string_var.ToLower().IndexOf(GlobalVars.getInstance().ListMathFunc[i].ToString()), GlobalVars.getInstance().ListMathFunc[i].ToString().Length);
                 if (range.location != NSNotFound && !normaStr.insideText(string_var.ToLower(), range.location))
                     result = YES;
             }
@@ -83,7 +88,7 @@ namespace MCX_Basic
 
         public double returnMathResult(String str)
         {
-            ////Log.d(TAG, "± returnMathResult for " + str);
+            Debug.WriteLine(TAG + "± returnMathResult for " + str);
             double value = 0;
             if (str.Length > 0)
             {
@@ -101,7 +106,10 @@ namespace MCX_Basic
                     if (variables.variableIsPresent(arrAll[i].ToString()))
                         arrAll[i] = variables.returnContainOfVariable(arrAll[i].ToString());
                 str = String.Join("", arrAll);
-                List<String> arr = new List<String>((str.Split(Convert.ToChar(mathSet)).ToList()));
+                //kill spaces
+                //List<String> arr = new List<String>((str.Split(Convert.ToChar(mathSet)).ToList()));
+                List<String> arr = new List<String>((Regex.Split(str, mathSet).ToList()));
+
                 List<String> arrValue = new List<String>();
                 arrValue = arr;
                 if (str.Substring(0, 1).Equals("-"))
@@ -109,14 +117,28 @@ namespace MCX_Basic
                     arrValue.RemoveAt(0);
                     arrValue[0] = "-" + arrValue[0].ToString();
                 }
+
+                if (arrValue.Count() > 1) //проверка на наличие минуса внутри кавычек
+                    for (int i = 0; i < arrValue.Count() - 1; i++)
+                    {
+                        String iStr = arrValue[i];
+                        String iStrNext = str.Substring(arrValue[i].ToString().Length, 1);
+
+                        if ((iStr.Substring(iStr.Length - 1).Equals("\"")) && (iStrNext.Equals("-")))
+                        {
+                            arrValue[i] = arrValue[i] + "-" + arrValue[i + 1];
+                            arrValue.RemoveAt(i + 1);
+                        }
+                    }
+
                 List<String> arrSign = new List<String>();
                 for (int i = 0; i < arrValue.Count - 1; i++)
                 {
                     index = index + arrValue[i].ToString().Length + 1;
                     NSRange range = new NSRange(index - 1, 1);
-                    arrSign.Add(str.Substring(range.location, range.location + range.length));
+                    arrSign.Add(str.Substring(range.location, range.length));
                 }
-                ////Log.d(TAG, "± !returnMathResult for " + str);
+                Debug.WriteLine(TAG + "± !returnMathResult for " + str);
                 for (int i = 0; i < arrValue.Count; i++)
                 {
                     if (arrValue[i].ToString().Length > 0)
@@ -130,7 +152,7 @@ namespace MCX_Basic
                             }
                 }
 
-                ////Log.d(TAG, "± returnMathResult arrValue " + arrValue);
+                Debug.WriteLine(TAG + "± returnMathResult arrValue " + arrValue);
 
                 for (int i = 0; i < arrValue.Count; i++)
                 {
@@ -144,22 +166,29 @@ namespace MCX_Basic
                             String prefix = "val("; // string_var prefix, not needle prefix!
                             String suffix = ")"; // string_var suffix, not needle suffix!
                             NSRange range = new NSRange(prefix.Length, arrValue[i].ToString().Length - prefix.Length - suffix.Length);
-                            String numStr = arrValue[i].ToString().Substring(range.location, range.location + range.length);
+                            String numStr = arrValue[i].ToString().Substring(range.location, range.length);
                             numStr = numStr.Replace("\"", "");
                             if (variables.variableIsPresent(numStr))
                                 numStr = variables.returnContainOfVariable(numStr);
-                            numStr = String.Join("", numStr.Split(Convert.ToChar(invNumberSet)));
+                            //numStr = String.Join("", numStr.Split(Convert.ToChar(invNumberSet)));
+
+                            
+                            double dbl = 0;
                             try
                             {
-                                arrValue[i]= Double.Parse(numStr).ToString();
+                                numStr = numStr.Replace(".", ",");
+                                dbl = Double.Parse(numStr);
+                                arrValue[i] = dbl.ToString().Replace(",", ".");
+
                             }
-                            catch //////(NumberFormatException e)
+                            catch //(NumberFormatException e)
                             {
-                                ////Log.d(TAG, "± numStr=" + numStr + "Wrong number format in VAL");
+                                Debug.WriteLine(TAG + "± numStr=" + numStr + "Wrong number format in VAL");
                             }
+                            
                         }
                         else {
-                            GlobalVars.getInstance().error = "Syntax error at - \n" + arrValue[i].ToString() + "\n";
+                            GlobalVars.getInstance().Error = "Syntax error at - " + Environment.NewLine + arrValue[i].ToString() + "" + Environment.NewLine;
                         }
                     }
                     else if (funcString.Equals("asc("))
@@ -174,11 +203,11 @@ namespace MCX_Basic
                                 prefix = "asc(";
                                 suffix = ")";
                                 range = new NSRange(prefix.Length, arrValue[i].ToString().Length - prefix.Length - suffix.Length);
-                                String nameString = arrValue[i].ToString().Substring(range.location, range.location + range.length);
+                                String nameString = arrValue[i].ToString().Substring(range.location, range.length);
                                 int index1 = variables.makeVariableIndex(nameString);
                                 if (index1 > 0 && nameString != null)
                                 {
-                                    VariableSet varSet = (VariableSet)GlobalVars.getInstance().variables[index1];
+                                    VariableSet varSet = (VariableSet)GlobalVars.getInstance().Variables[index1];
                                     String asciiString = varSet.var.ToString().Substring(0, 1);
                                     arrValue[i] = asciiString;
                                 }
@@ -187,13 +216,13 @@ namespace MCX_Basic
                                 }
                             }
                             else {
-                                String asciiString = arrValue[i].ToString().Substring(range.location, range.location + range.length);
+                                String asciiString = arrValue[i].ToString().Substring(range.location, range.length);
                                 asciiString = ((int)asciiString.ElementAt(0)).ToString();
                                 arrValue[i] = asciiString;
                             }
                         }
                         else {
-                            GlobalVars.getInstance().error = "Syntax error at - " + arrValue[i].ToString() + "\n";
+                            GlobalVars.getInstance().Error = "Syntax error at - " + arrValue[i].ToString() + "" + Environment.NewLine;
                         }
                     }
                     else if (funcString.Equals("abs("))
@@ -204,20 +233,22 @@ namespace MCX_Basic
                             String prefix = "abs("; // string_var prefix, not needle prefix!
                             String suffix = ")"; // string_var suffix, not needle suffix!
                             NSRange range = new NSRange(prefix.Length, arrValue[i].ToString().Length - prefix.Length - suffix.Length);
-                            String numStr = arrValue[i].ToString().Substring(range.location, range.location + range.length);
+                            String numStr = arrValue[i].ToString().Substring(range.location, range.length);
                             double pre = 0;
                             try
                             {
+                                numStr = numStr.Replace(".", ",");
                                 pre = Math.Abs(Double.Parse(numStr));
+                                arrValue[i] = pre.ToString().Replace(",", ".");
                             }
-                            catch //////(NumberFormatException e)
+                            catch //(NumberFormatException e)
                             {
-                                ////Log.d(TAG, "± str=" + str + "Wrong number format in ABS");
+                                Debug.WriteLine(TAG + "± str=" + str + "Wrong number format in ABS");
                             }
                             arrValue[i] = pre.ToString();
                         }
                         else {
-                            GlobalVars.getInstance().error = "Syntax error at - " + arrValue[i].ToString() + "\n";
+                            GlobalVars.getInstance().Error = "Syntax error at - " + arrValue[i].ToString() + "" + Environment.NewLine;
                         }
                     }
                     else if (funcString.Equals("fix("))
@@ -228,18 +259,21 @@ namespace MCX_Basic
                             String prefix = "fix("; // string_var prefix, not needle prefix!
                             String suffix = ")"; // string_var suffix, not needle suffix!
                             NSRange range = new NSRange(prefix.Length, arrValue[i].ToString().Length - prefix.Length - suffix.Length);
-                            String numStr = arrValue[i].ToString().Substring(range.location, range.location + range.length);
+                            String numStr = arrValue[i].ToString().Substring(range.location, range.length);
                             try
                             {
-                                arrValue[i] = (Math.Round(Double.Parse(numStr))).ToString();
+                                numStr = numStr.Replace(".", ",");
+                                string str_val = (Math.Truncate(Double.Parse(numStr))).ToString();
+                                arrValue[i] = str_val.ToString().Replace(",", ".");
+
                             }
-                            catch ////(NumberFormatException e)
+                            catch //(NumberFormatException e)
                             {
-                                ////Log.d(TAG, "± numStr=" + numStr + "Wrong number format in VAL");
+                                Debug.WriteLine(TAG + "± numStr=" + numStr + "Wrong number format in VAL");
                             }
                         }
                         else {
-                            GlobalVars.getInstance().error = "Syntax error at - " + arrValue[i].ToString() + "\n";
+                            GlobalVars.getInstance().Error = "Syntax error at - " + arrValue[i].ToString() + "" + Environment.NewLine;
                         }
                     }
                     else if (funcString.Equals("rnd("))
@@ -250,20 +284,20 @@ namespace MCX_Basic
                             String prefix = "rnd("; // string_var prefix, not needle prefix!
                             String suffix = ")"; // string_var suffix, not needle suffix!
                             NSRange range = new NSRange(prefix.Length, arrValue[i].ToString().Length - prefix.Length - suffix.Length);
-                            String numStr = arrValue[i].ToString().Substring(range.location, range.location + range.length);
+                            String numStr = arrValue[i].ToString().Substring(range.location, range.length);
                             try
                             {
                                 Random r = new Random();
                                 int rint = r.Next(Int32.Parse(numStr));
                                 arrValue[i] = rint.ToString();
                             }
-                            catch ////(NumberFormatException e)
+                            catch //(NumberFormatException e)
                             {
-                                ////Log.d(TAG, "± numStr=" + numStr + "Wrong number format in VAL");
+                                Debug.WriteLine(TAG + "± numStr=" + numStr + "Wrong number format in VAL");
                             }
                         }
                         else {
-                            GlobalVars.getInstance().error = "Syntax error at - " + arrValue[i].ToString() + "\n";
+                            GlobalVars.getInstance().Error = "Syntax error at - " + arrValue[i].ToString() + "" + Environment.NewLine;
                         }
                     }
                     else if (funcString.Equals("inst"))
@@ -273,7 +307,7 @@ namespace MCX_Basic
                             String prefix = "instr("; // string_var prefix, not needle prefix!
                             String suffix = ")"; // string_var suffix, not needle suffix!
                             NSRange range = new NSRange(prefix.Length, originalString.Length - prefix.Length - suffix.Length);
-                            String normStr = originalString.Substring(range.location, range.location + range.length);
+                            String normStr = originalString.Substring(range.location, range.length);
                             normStr = normStr.Replace("+", ",");
                             String varNm = normStr.Replace(" ", "").Split(',')[0];
                             if (variables.variableIsPresent(varNm))
@@ -288,10 +322,10 @@ namespace MCX_Basic
                             int indLoc = 0;
                             List<String> arr1 = new List<String>();
                             arr1 = normaStr.extractTextToArray(normStr);
-                            if (GlobalVars.getInstance().error == null) indLoc = arr1[0].ToString().IndexOf(arr1[1].ToString());
+                            if (GlobalVars.getInstance().Error == "") indLoc = arr1[0].ToString().IndexOf(arr1[1].ToString());
                             if (range.location == NSNotFound)
                             {
-                                ////Log.d(TAG, "± string_var was not found");
+                                Debug.WriteLine(TAG + "± string_var was not found");
                                 arrValue[i] = "0";
                             }
                             else {
@@ -299,7 +333,7 @@ namespace MCX_Basic
                             }
                         }
                         else {
-                            GlobalVars.getInstance().error = "Syntax error at - " + arrValue[i].ToString() + "\n";
+                            GlobalVars.getInstance().Error = "Syntax error at - " + arrValue[i].ToString() + "" + Environment.NewLine;
                         }
                     }
                     else if (funcString.Equals("len("))
@@ -309,7 +343,7 @@ namespace MCX_Basic
                             String prefix = "len("; // string_var prefix, not needle prefix!
                             String suffix = ")"; // string_var suffix, not needle suffix!
                             NSRange range = new NSRange(prefix.Length, originalString.Length - prefix.Length - suffix.Length);
-                            String normStr = originalString.Substring(range.location, range.location + range.length);
+                            String normStr = originalString.Substring(range.location, range.length);
                             normStr = normStr.Replace("+", ",");
                             String varNm = normStr.Replace(" ", "").Split(',')[0];
                             if (variables.variableIsPresent(varNm))
@@ -317,9 +351,9 @@ namespace MCX_Basic
                                 normStr = normStr.Replace(varNm, variables.returnContainOfVariable(varNm));
                             }
                             normStr = normStr.Replace("\"", "");
-                            if (GlobalVars.getInstance().error.Length != 0)
+                            if (GlobalVars.getInstance().Error.Length != 0)
                             {
-                                ////Log.d(TAG, "± string_var was not found");
+                                Debug.WriteLine(TAG + "± string_var was not found");
                                 arrValue[i] = "0";
                             }
                             else {
@@ -327,7 +361,7 @@ namespace MCX_Basic
                             }
                         }
                         else {
-                            GlobalVars.getInstance().error = "Syntax error at - " + arrValue[i].ToString() + "\n";
+                            GlobalVars.getInstance().Error = "Syntax error at - " + arrValue[i].ToString() + "" + Environment.NewLine;
                         }
                     }
                     else if (arrValue[i].ToString().Contains(alphaSet))
@@ -335,12 +369,12 @@ namespace MCX_Basic
                         index = variables.makeVariableIndex(arrValue[i].ToString());
                         if (variables.variableIsPresent(arrValue[i].ToString()))
                         {
-                            VariableSet varSet = GlobalVars.getInstance().variables[index];
+                            VariableSet varSet = GlobalVars.getInstance().Variables[index];
                             arrValue[i] = varSet.var;
                         }
                         else {
-                            ////Log.d(TAG, "± !!!Variable not excist");
-                            //GlobalVars.getInstance().error = "Syntax error\n";
+                            Debug.WriteLine(TAG + "± !!!Variable not excist");
+                            //GlobalVars.getInstance().Error = "Syntax error" + Environment.NewLine;
                             arrValue[i] = "0";
                         }
                     }
@@ -358,22 +392,26 @@ namespace MCX_Basic
                 /*
                 str=str stringByReplacingOccurrencesOfString:"rnd(" withString:"random(0,";
                 */
-                if (GlobalVars.getInstance().error.Equals(""))
+                if (GlobalVars.getInstance().Error.Equals(""))
                 {
                     //[System.Reflection.Assembly]::LoadFile("d:\\OneDriveNod\\OneDrive\\Coding\\Examples\\MCX basic\\MCX_Basic\\MCX_Basic\\mxparser.dll")
                     //[org.mariuszgromada.math.mxparser.regressiontesting.PerformanceTests]::Start()
 
-
+                    Debug.WriteLine(TAG + "str: " + str);
+                    str = str.Replace(",", ".");
                     Expression expression = new Expression(str);
+                    
                     if (expression.checkSyntax())
                     {
-                        ////Log.d(TAG, "± !!!!!!!!! RESULTING TEST " + expression.getExpressionString() + "=" + expression.calculate());
+                        Debug.WriteLine(TAG + "± !!!!!!!!! RESULTING TEST " + expression.getExpressionString() + "=" + expression.calculate());
                         value = expression.calculate();
+                        Debug.WriteLine(TAG, "value: " + value);
                     }
                     else {
-                        ////Log.d(TAG, "± in expression " + expression.getErrorMessage());
-                        GlobalVars.getInstance().error = "Error " + expression.getErrorMessage() + "\n";
+                        Debug.WriteLine(TAG + "± in expression " + expression.getErrorMessage());
+                        GlobalVars.getInstance().Error = "Error " + expression.getErrorMessage() + "" + Environment.NewLine;
                     }
+                    //value.Replace(".", ",");
                 }
             }
             return value;
@@ -411,7 +449,7 @@ namespace MCX_Basic
             {
                 index = index + arrValue[i].ToString().Length + 1;
                 NSRange range = new NSRange(index - 1, 1);
-                arrSign.Add(string_val.Substring(range.location, range.location + range.length));
+                arrSign.Add(string_val.Substring(range.location, range.length));
             }
             if (arrSign.Count > 1)
                 for (int i = 1; i < arrSign.Count; i++)
@@ -447,18 +485,19 @@ namespace MCX_Basic
                         adding = NO;
                     }
                 }
-            arrValue.RemoveAt(Convert.ToInt32(arrValueDelete));
-            arrSign.RemoveAt(Convert.ToInt32(arrSignDelete));
+            //deleting array from array
+            //arrValue = arrValue.Except(arrValueDelete).ToList();
+            //arrSign = arrSign.Except(arrValueDelete).ToList();
             String str = "";
             String old = "";
             if (arrValue.Count > 1)
             {
-                for (int i = 1; i < arrValue.Count; i++)
+                for (int i = 1; i < arrValue.Count(); i++)
                 {
                     if (arrValue[i].ToString().Length > 0)
                     {
                         if (isMath(arrValue[i - 1].ToString()) && isMath(arrValue[i].ToString())
-                                && !arrSign[i - 1].ToString().Equals(",") && !arrValue[i].ToString().Substring(0, 1).Equals("\""))
+                                /*&& !arrSign[i - 1].ToString().Equals(",")*/ && !arrValue[i].ToString().Substring(0, 1).Equals("\""))
                         {
                             String first;
                             if (normaStr.isText(arrValue[i - 1].ToString()))
@@ -520,6 +559,8 @@ namespace MCX_Basic
                 result = result + str;
                 str = "";
             }
+
+            //result = result.Replace(",", ".");
             return result;
         }
 
@@ -532,7 +573,7 @@ namespace MCX_Basic
             Log.d(TAG, "± !!!!!returnMathResult string_val="+string_val+"result="+result);
             if (!result.matches(alphaSet)) rangeOfCharacterFromSet:alphaSet.location == NSNotFound) {
             int index = variables makeVariableIndex:result;
-            VariableSet* varSet=globals.variables objectAtIndex:index;
+            VariableSet* varSet=globals.Variables objectAtIndex:index;
             result = varSet.var;
         }
             return result;
